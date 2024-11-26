@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:voice_meet/view/drawer.dart';
 
 import '../chat_message.dart';
 import '../text_composer.dart';
@@ -65,8 +66,13 @@ class _ChatScreenState extends State<ChatScreen> {
       final user = authResult.user;
       return user;
     } catch (e, s) {
-      debugPrint('Erro ao realizar login: $e');
-      debugPrint('Stack trace: $s');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text('Login failed: $e'),
+        ),
+      );
+
       return null;
     }
   }
@@ -147,9 +153,7 @@ class _ChatScreenState extends State<ChatScreen> {
               : const SizedBox(),
         ],
       ),
-      drawer: Drawer(
-        child: Icon(Icons.import_contacts_sharp),
-      ),
+      drawer: DrawerWidget(),
       body: Column(
         children: <Widget>[
           Expanded(

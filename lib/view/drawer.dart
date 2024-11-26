@@ -55,7 +55,7 @@ class _DrawerWidgetState extends State<DrawerWidget> {
             currentAccountPicture: CircleAvatar(
               backgroundImage: _currentUser?.photoURL != null
                   ? NetworkImage(_currentUser!.photoURL!)
-                  : AssetImage('assets/default_avatar.png') as ImageProvider,
+                  : AssetImage('assets/images/user.png') as ImageProvider,
             ),
             decoration: BoxDecoration(
               color: Colors.blue,
