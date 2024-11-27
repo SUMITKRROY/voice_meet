@@ -25,7 +25,7 @@ class MyText extends StatelessWidget {
       label,
       style: TextStyle(
         fontSize: fontSize ?? 14,
-        color: fontColor,
+        // color: fontColor,
       ),
       textAlign: alignment ? TextAlign.center : TextAlign.start,
     );

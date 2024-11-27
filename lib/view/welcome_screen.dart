@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:voice_meet/route/pageroute.dart';
 import 'package:voice_meet/route/route_generater.dart';
  
@@ -6,9 +8,45 @@ import 'package:voice_meet/theme/app_theme.dart';
 import '../component/myText.dart';
  
 // Welcome Screen with Bot and User Buttons
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
 
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+
+
+
+
+  // Function for Google Sign-In
+  Future<User?> _signInWithGoogle(BuildContext context) async {
+    try {
+      // Trigger the Google Sign-In flow
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        // The user canceled the sign-in
+        return null;
+      }
+
+      // Obtain the authentication details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create a new credential
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Once signed in, return the UserCredential
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      return userCredential.user;
+    } catch (e) {
+      print("Error during Google sign-in: $e");
+      return null;
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,10 +74,7 @@ class WelcomeScreen extends StatelessWidget {
                     backgroundColor: context.theme.appColors.primary,
                   ),
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const BotScreen()),
-                    );
+                    Navigator.pushNamed(context, RoutePath.chatWithBot);
                   },
                   child: MyText(
                     label: 'Bot',
@@ -50,6 +85,7 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               // Full width User Button
+              // Full width User Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -57,11 +93,16 @@ class WelcomeScreen extends StatelessWidget {
                     foregroundColor: context.theme.appColors.onPrimary,
                     backgroundColor: context.theme.appColors.primary,
                   ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const UserScreen()),
-                    );
+                  onPressed: () async {
+                    // Sign in with Google and navigate on success
+                    User? user = await _signInWithGoogle(context);
+                    if (user != null) {
+                      // Navigate to the chat with user screen
+                      Navigator.pushNamed(context, RoutePath.chatWithUser);
+                    } else {
+                      // Handle the case when login failed
+                      print("Login failed");
+                    }
                   },
                   child: MyText(
                     label: 'User',
@@ -89,57 +130,4 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
  
-// Bot Screen
-class BotScreen extends StatelessWidget {
-  const BotScreen({Key? key}) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.theme.appColors.background,
-      appBar: AppBar(
-        title: MyText(
-          label: 'Bot Screen',
-          fontSize: 20,
-
-          alignment: true,
-        ),
-        backgroundColor: context.theme.appColors.primary,
-      ),
-      body: Center(
-        child: MyText(
-          label: 'This is the Bot Screen',
-          fontSize: 18,
-
-          alignment: true,
-        ),
-      ),
-    );
-  }
-}
-
-// User Screen
-class UserScreen extends StatelessWidget {
-  const UserScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.theme.appColors.background,
-      appBar: AppBar(
-        title: MyText(
-          label: 'User Screen',
-          fontSize: 20,
-
-          alignment: true,
-        ),
-        backgroundColor: context.theme.appColors.primary,
-      ),
-      body: Center(
-        child: Text(
-           'This is the User Screen',
-        ),
-      ),
-    );
-  }
-}

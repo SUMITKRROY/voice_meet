@@ -3,8 +3,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:voice_meet/route/pageroute.dart';
+import 'package:voice_meet/view/chat_screen/bot_screen.dart';
 
-import '../view/chat_with_user_screen.dart';
+import '../view/chat_screen/user_screen.dart';
 import '../view/profile_screen.dart';
 import '../view/setting_screen.dart';
 import '../view/splash_screen.dart';
@@ -33,9 +34,15 @@ class MyRoutes {
     //     );
 
     // Chat Screen
-      case RoutePath.chatScreen:
+      case RoutePath.chatWithUser:
         return MaterialPageRoute(
           builder: (_) => const ChatScreen(),
+        );
+
+        // Chat Screen
+      case RoutePath.chatWithBot:
+        return MaterialPageRoute(
+          builder: (_) => const BotScreen(),
         );
 
     // Profile Screen
