@@ -48,7 +48,7 @@ class MyRoutes {
     // Profile Screen
       case RoutePath.profile:
         return MaterialPageRoute(
-          builder: (_) => const ProfileScreen(),
+          builder: (_) =>  UserProfileScreen(),
         );
 
     // Settings Screen

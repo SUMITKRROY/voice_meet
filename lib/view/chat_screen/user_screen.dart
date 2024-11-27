@@ -1,131 +1,192 @@
+import 'dart:io';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+import '../chat_message.dart';
+import '../text_composer.dart';
+
+
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({Key? key}) : super(key: key);
+  const ChatScreen({super.key});
 
   @override
-  _ChatScreenState createState() => _ChatScreenState();
+  State<StatefulWidget> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  // Sample messages list
-  final List<Map<String, String>> messages = [
-    {'sender': 'User1', 'message': 'Hey, how are you?'},
-    {'sender': 'User2', 'message': 'I\'m good! How about you?'},
-    {'sender': 'User1', 'message': 'I\'m doing great, thanks for asking!'},
-  ];
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final googleSignIn = GoogleSignIn();
+  final firebaseAuth = FirebaseAuth.instance;
+  final firestoreCollection = FirebaseFirestore.instance.collection('messages');
+  final fcmToken = FirebaseMessaging.instance.getToken();
 
-  // Controller to handle text input
-  final TextEditingController _controller = TextEditingController();
+  User? _currentUser;
+  bool _isLoading = false;
 
-  // Function to send a message
-  void _sendMessage() {
-    if (_controller.text.isNotEmpty) {
-      setState(() {
-        messages.add({'sender': 'User1', 'message': _controller.text});
-        _controller.clear();  // Clear the text input after sending
+  @override
+  void initState() {
+    super.initState();
+    FirebaseMessaging.instance.setAutoInitEnabled(true);
+    if (mounted) {
+      firebaseAuth.authStateChanges().listen((user) {
+        if (user != null) {
+          setState(() => _currentUser = user);
+        } else {
+          setState(() => _currentUser = null);
+        }
       });
+    }
+  }
+
+  Future<User?> _getUser() async {
+    if (_currentUser != null) return _currentUser;
+
+    try {
+      final googleSignInAccount = await googleSignIn.signIn();
+      final googleSignInAuthentication =
+      await googleSignInAccount?.authentication;
+
+      if (googleSignInAccount == null) return null;
+      if (googleSignInAuthentication == null) return null;
+
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleSignInAuthentication.idToken,
+        accessToken: googleSignInAuthentication.accessToken,
+      );
+
+      final authResult = await firebaseAuth.signInWithCredential(credential);
+      final user = authResult.user;
+      return user;
+    } catch (e, s) {
+      debugPrint('Erro ao realizar login: $e');
+      debugPrint('Stack trace: $s');
+      return null;
+    }
+  }
+
+  Future<void> _sendMessage({
+    File? imgFile,
+    String? text,
+  }) async {
+    final user = await _getUser();
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(
+              'error message ',
+            ),
+          ),
+        );
+      }
+    }
+
+    if (user != null) {
+      var data = <String, dynamic>{
+        'uid': user.uid,
+        'senderName': user.displayName,
+        'senderPhotoUrl': user.photoURL,
+        'time': Timestamp.now(),
+      };
+
+      final task = FirebaseStorage.instance.ref().child(
+        user.uid + DateTime.now().millisecondsSinceEpoch.toString(),
+      );
+
+      if (imgFile != null) {
+        setState(() => _isLoading = true);
+        final taskWithImage = task.putFile(imgFile);
+        var taskSnapshot = await taskWithImage.whenComplete(() {});
+        String url = await taskSnapshot.ref.getDownloadURL();
+        data['imgUrl'] = url;
+      } else {
+        data['text'] = text;
+      }
+      setState(() => _isLoading = false);
+      firestoreCollection.add(data);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('Chat'),
-        backgroundColor: Colors.teal,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          _currentUser != null
+              ? ' ${_currentUser?.displayName ?? "i don't know."}'
+              : 'Chat App',
+        ),
+        actions: <Widget>[
+          _currentUser != null
+              ? IconButton(
+            icon: const Icon(
+              Icons.exit_to_app,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              firebaseAuth.signOut();
+              googleSignIn.signOut();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('success log out '),
+                ),
+              );
+            },
+          )
+              : const SizedBox(),
+        ],
+      ),
+      drawer: Drawer(
+        child: Icon(Icons.import_contacts_sharp),
       ),
       body: Column(
-        children: [
-          // Message List
+        children: <Widget>[
           Expanded(
-            child: ListView.builder(
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final message = messages[index];
-                return MessageBubble(
-                  sender: message['sender']!,
-                  text: message['message']!,
-                  isMe: message['sender'] == 'User1',
-                );
+            child: StreamBuilder<QuerySnapshot>(
+              stream: firestoreCollection.orderBy('time').snapshots(),
+              builder: (context, snapshot) {
+                switch (snapshot.connectionState) {
+                  case ConnectionState.none:
+                  case ConnectionState.waiting:
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  default:
+                    var documents = snapshot.data?.docs.reversed.toList() ??
+                        <QueryDocumentSnapshot>[];
+                    return ListView.builder(
+                      itemCount: documents.length,
+                      reverse: true,
+                      itemBuilder: (context, index) {
+                        final document = documents[index];
+                        return ChatMessage(
+                          data: document.data() as Map<String, dynamic>,
+                          isMine: document['uid'] == _currentUser?.uid,
+                        );
+                      },
+                    );
+                }
               },
             ),
           ),
-
-          // Input and Send Button
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: 'Type a message...',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _sendMessage,
-                  color: Colors.teal,
-                ),
-              ],
-            ),
+          _isLoading ? const LinearProgressIndicator() : const SizedBox(),
+          TextComposer(
+            sendMessage: _sendMessage,
           ),
         ],
       ),
     );
   }
-}
 
-// Widget for individual message bubbles
-class MessageBubble extends StatelessWidget {
-  final String sender;
-  final String text;
-  final bool isMe;
-
-  const MessageBubble({
-    required this.sender,
-    required this.text,
-    required this.isMe,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Align(
-        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-          decoration: BoxDecoration(
-            color: isMe ? Colors.teal : Colors.grey[300],
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                sender,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isMe ? Colors.white : Colors.black,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                text,
-                style: TextStyle(
-                  color: isMe ? Colors.white : Colors.black,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
