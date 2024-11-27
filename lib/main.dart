@@ -1,6 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
+import 'package:voice_meet/provider/auth/auth_bloc.dart';
 import 'package:voice_meet/route/pageroute.dart';
 import 'package:voice_meet/route/route_generater.dart';
 import 'package:voice_meet/theme/app_theme.dart';
@@ -22,21 +26,31 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      // 1. Provide AppTheme above the MaterialApp, so it will be available on all pages.
-      create: (_) => AppTheme(),
-      builder: (context, _) => MaterialApp(
-        initialRoute: RoutePath.splashScreen,
-        onGenerateRoute: MyRoutes.generateRoute,
-        debugShowCheckedModeBanner: false,
-        title: 'Flutter Demo',
-        // 2. Provide light theme.
-        theme: AppTheme.light,
-        // 3. Provide dark theme.
-        darkTheme: AppTheme.dark,
-        // 4. Watch AppTheme changes (ThemeMode).
-        themeMode: context.watch<AppTheme>().themeMode,
-        // home: const MyHomePage(title: 'Flutter Demo Home Page'),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => ThemeBloc(),
+        ),
+        BlocProvider(
+          create: (context) => AuthBloc(), // Initialize AuthBloc
+        ),
+      ],
+      child: ChangeNotifierProvider(
+        // 1. Provide AppTheme above the MaterialApp, so it will be available on all pages.
+        create: (_) => AppTheme(),
+        builder: (context, _) => MaterialApp(
+          initialRoute: RoutePath.splashScreen,
+          onGenerateRoute: MyRoutes.generateRoute,
+          debugShowCheckedModeBanner: false,
+          title: 'Flutter Demo',
+          // 2. Provide light theme.
+          theme: AppTheme.light,
+          // 3. Provide dark theme.
+          darkTheme: AppTheme.dark,
+          // 4. Watch AppTheme changes (ThemeMode).
+          themeMode: context.watch<AppTheme>().themeMode,
+          // home: const MyHomePage(title: 'Flutter Demo Home Page'),
+        ),
       ),
     );
   }

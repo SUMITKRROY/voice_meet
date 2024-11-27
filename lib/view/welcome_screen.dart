@@ -1,13 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:voice_meet/route/pageroute.dart';
-import 'package:voice_meet/route/route_generater.dart';
- 
 import 'package:voice_meet/theme/app_theme.dart';
 import '../component/myText.dart';
- 
-// Welcome Screen with Bot and User Buttons
+import '../provider/auth/auth_bloc.dart';
+import '../provider/auth/auth_event.dart';
+import '../provider/auth/auth_state.dart';
+
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
 
@@ -17,36 +18,55 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
 
+  final GoogleSignIn googleSignIn = GoogleSignIn();
+  final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 
+  User? _currentUser;
+  bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    //FirebaseMessaging.instance.setAutoInitEnabled(true);
 
-  // Function for Google Sign-In
-  Future<User?> _signInWithGoogle(BuildContext context) async {
+    // Listen to authentication state changes
+    firebaseAuth.authStateChanges().listen((user) {
+      setState(() {
+        _currentUser = user;
+      });
+    });
+  }
+
+  // Function to get current user or sign in with Google if not already signed in
+  Future<User?> _getUser() async {
+    if (_currentUser != null) return _currentUser;
+
     try {
-      // Trigger the Google Sign-In flow
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) {
-        // The user canceled the sign-in
-        return null;
-      }
+      final googleSignInAccount = await googleSignIn.signIn();
+      final googleSignInAuthentication = await googleSignInAccount?.authentication;
 
-      // Obtain the authentication details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      if (googleSignInAccount == null || googleSignInAuthentication == null) return null;
 
-      // Create a new credential
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleSignInAuthentication.idToken,
+        accessToken: googleSignInAuthentication.accessToken,
       );
 
-      // Once signed in, return the UserCredential
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      return userCredential.user;
-    } catch (e) {
-      print("Error during Google sign-in: $e");
+      final authResult = await firebaseAuth.signInWithCredential(credential);
+      final user = authResult.user;
+
+      setState(() {
+        _currentUser = user;
+      });
+
+      return user;
+    } catch (e, s) {
+      debugPrint('Error during login: $e');
+      debugPrint('Stack trace: $s');
       return null;
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,7 +105,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
               const SizedBox(height: 20),
               // Full width User Button
-              // Full width User Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -94,14 +113,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     backgroundColor: context.theme.appColors.primary,
                   ),
                   onPressed: () async {
-                    // Sign in with Google and navigate on success
-                    User? user = await _signInWithGoogle(context);
-                    if (user != null) {
-                      // Navigate to the chat with user screen
-                      Navigator.pushNamed(context, RoutePath.chatWithUser);
-                    } else {
-                      // Handle the case when login failed
-                      print("Login failed");
+                    setState(() => _isLoading = true);
+                    User? user = await _getUser();
+                    setState(() => _isLoading = false);
+if (user != null){
+  Navigator.pushNamed(context, RoutePath.chatWithUser);
+}
+                    else if (user == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Sign-In failed. Please try again.')),
+                      );
                     }
                   },
                   child: MyText(
@@ -111,6 +132,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                 ),
               ),
+              // Bloc Listener for authentication state changes
+
             ],
           ),
         ),
@@ -118,7 +141,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       // Floating Action Button (FAB) to navigate to Settings
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-       Navigator.pushNamed(context, RoutePath.settingScreen);
+          Navigator.pushNamed(context, RoutePath.profile);
         },
         backgroundColor: context.theme.appColors.primary,
         child: Icon(
@@ -129,5 +152,3 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 }
- 
-
