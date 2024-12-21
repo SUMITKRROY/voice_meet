@@ -8,10 +8,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:voice_meet/view/drawer.dart';
+import 'package:voice_meet/view/widget/drawer.dart';
 
 import '../chat_message.dart';
-import '../text_composer.dart';
+import '../widget/text_composer.dart';
 
 
 class ChatScreen extends StatefulWidget {
@@ -133,25 +133,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ? ' ${_currentUser?.displayName ?? "i don't know."}'
               : 'Chat App',
         ),
-        actions: <Widget>[
-          _currentUser != null
-              ? IconButton(
-            icon: const Icon(
-              Icons.exit_to_app,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              firebaseAuth.signOut();
-              googleSignIn.signOut();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('success log out '),
-                ),
-              );
-            },
-          )
-              : const SizedBox(),
-        ],
+
       ),
       drawer: DrawerWidget(),
       body: Column(

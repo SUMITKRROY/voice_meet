@@ -3,12 +3,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:voice_meet/route/pageroute.dart';
-import 'package:voice_meet/view/chat_screen/bot_screen.dart';
+import 'package:voice_meet/view/chat_screen/voice_chat_screen.dart';
 
 import '../view/chat_screen/user_screen.dart';
-import '../view/chat_screen/bot_screen.dart';
+import '../view/chat_screen/voice_chat_screen.dart';
 import '../view/profile_screen.dart';
-import '../view/setting_screen.dart';
+import '../view/stt_screen.dart';
+import '../view/widget/setting_screen.dart';
 import '../view/splash_screen.dart';
 import '../view/welcome_screen.dart';
 
@@ -43,7 +44,7 @@ class MyRoutes {
         // Chat Screen
       case RoutePath.chatWithBot:
         return MaterialPageRoute(
-          builder: (_) => const BotScreen(),
+          builder: (_) =>   VoiceChatScreen(),
         );
 
     // Profile Screen
@@ -56,6 +57,10 @@ class MyRoutes {
       case RoutePath.settingScreen:
         return MaterialPageRoute(
           builder: (_) => const SettingScreen(),
+        );    // Settings Screen
+      case RoutePath.speechToTextWidget:
+        return MaterialPageRoute(
+          builder: (_) =>   SpeechToTextWidget(),
         );
 
     // // About Us Screen

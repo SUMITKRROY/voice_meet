@@ -77,7 +77,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     Navigator.pushNamed(context, RoutePath.chatWithBot);
                   },
                   child: MyText(
-                    label: 'Bot',
+                    label: 'Voice chat',
                     fontSize: 18,
                     alignment: true, // Center the text
                   ),
@@ -105,7 +105,25 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     }
                   },
                   child: MyText(
-                    label: 'User',
+                    label: 'User chat',
+                    fontSize: 18,
+                    alignment: true, // Center the text
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: context.theme.appColors.onPrimary,
+                    backgroundColor: context.theme.appColors.primary,
+                  ),
+                  onPressed: ()  {
+                    Navigator.pushNamed(context, RoutePath.speechToTextWidget);
+                  },
+                  child: MyText(
+                    label: 'STT screen',
                     fontSize: 18,
                     alignment: true, // Center the text
                   ),

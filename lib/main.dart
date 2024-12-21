@@ -13,6 +13,9 @@ import 'package:voice_meet/theme/app_typography.dart';
 
 import 'firebase_options.dart';
 
+const String appId = '94d325cbd36c4f2eb33f312ad439fbb9'; // Replace with your Agora App ID
+const String token = "7156923f72e24dfc93b62fb83947ab3d"; // Add a token if security is enabled
+const String channelName = 'test_channel';
 
 
 Future<void> main() async {
@@ -44,7 +47,7 @@ class MyApp extends StatelessWidget {
           initialRoute: RoutePath.splashScreen,
           onGenerateRoute: MyRoutes.generateRoute,
           debugShowCheckedModeBanner: false,
-          title: 'Flutter Demo',
+          title: 'Stranger talk',
           // 2. Provide light theme.
           theme: AppTheme.light,
           // 3. Provide dark theme.

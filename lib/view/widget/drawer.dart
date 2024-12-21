@@ -7,8 +7,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:voice_meet/route/pageroute.dart';
 
-import '../../route/route_generater.dart';
+import '../../../route/route_generater.dart';
 
 
 class DrawerWidget extends StatefulWidget {
@@ -75,23 +76,68 @@ class _DrawerWidgetState extends State<DrawerWidget> {
             },
           ),
           ListTile(
+            title: Text('voice chat'),
+            onTap: () {
+    Navigator.pushReplacementNamed(context, RoutePath.chatWithBot);
+            },
+          ),
+          ListTile(
             title: Text('Sign Out'),
             onTap: () {
               _signOut();
-              Navigator.of(context).pop(); // Close the drawer
-            },
+              Navigator.pushReplacementNamed(context, RoutePath.welcome);}
           ),
         ],
       ),
     );
   }
 
-  // Function to log out user
+// Function to log out user
   Future<void> _signOut() async {
-    await googleSignIn.signOut();
-    await firebaseAuth.signOut();
+    // Show a loading indicator
+    if (!mounted) return;  // Ensure the widget is still in the tree before calling setState
     setState(() {
-      _currentUser = null;
+      _isLoading = true; // Add a loading flag to your state
     });
+
+    try {
+      // Sign out from Firebase and Google
+      await firebaseAuth.signOut();
+      await googleSignIn.signOut();
+
+      // Hide the loading indicator
+      if (!mounted) return;  // Check again if widget is mounted
+      setState(() {
+        _isLoading = false;
+        _currentUser = null;
+      });
+
+      // Show SnackBar indicating successful log out
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Successfully logged out'),
+        ),
+      );
+
+      // Wait for a brief moment before navigating to the welcome page
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Navigate to the welcome page
+      if (!mounted) return;  // Check if widget is still mounted before navigating
+      Navigator.pushReplacementNamed(context, RoutePath.welcome);
+    } catch (e) {
+      // Handle any errors during sign-out process
+      if (!mounted) return;  // Ensure widget is mounted before calling setState
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error logging out: $e'),
+        ),
+      );
+    }
   }
+
 }

@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-
-
 class TextComposer extends StatefulWidget {
   const TextComposer({
     super.key,
@@ -45,11 +43,18 @@ class _TextComposerState extends State<TextComposer> {
               widget.sendMessage(imgFile: selectedImage);
             },
           ),
+          // Mic Icon Added
+          IconButton(
+            icon: const Icon(Icons.mic),
+            onPressed: () {
+              // You can add functionality here if needed later
+            },
+          ),
           Expanded(
             child: TextField(
               controller: _controller,
               decoration: const InputDecoration.collapsed(
-                hintText: 'Mere Ram',
+                hintText: 'Typing.....',
               ),
               onChanged: (text) {
                 setState(() {
